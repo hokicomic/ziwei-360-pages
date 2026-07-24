@@ -30,25 +30,25 @@ select {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .app-shell.input-collapsed {
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-rows: 58px minmax(0, 1fr);
 }
 
 .input-panel {
   background: #2f2923;
   color: #fff8ed;
-  padding: 28px;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 14px 28px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .input-toggle {
-  width: 100%;
+  width: auto;
   min-height: 36px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   background: #413830;
@@ -57,7 +57,7 @@ select {
 }
 
 .app-shell.input-collapsed .input-panel {
-  padding: 12px 8px;
+  padding: 10px 28px;
 }
 
 .app-shell.input-collapsed .input-content {
@@ -65,8 +65,7 @@ select {
 }
 
 .app-shell.input-collapsed .input-toggle {
-  writing-mode: vertical-rl;
-  min-height: 128px;
+  min-height: 36px;
   margin-bottom: 0;
   line-height: 1.2;
 }
@@ -79,14 +78,14 @@ select {
 }
 
 .brand p {
-  margin: 8px 0 24px;
+  margin: 4px 0 12px;
   color: #d5c7b8;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 10px;
 }
 
 .form-grid label {
@@ -125,7 +124,7 @@ select {
 }
 
 .form-grid button {
-  grid-column: 1 / -1;
+  grid-column: auto;
   min-height: 44px;
   border: 0;
   border-radius: 6px;
@@ -136,7 +135,7 @@ select {
 }
 
 .note {
-  margin-top: 18px;
+  margin-top: 10px;
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 6px;
@@ -1046,6 +1045,8 @@ h2 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: center;
+  padding: 4px 0 0;
 }
 
 .lesson-controls button {

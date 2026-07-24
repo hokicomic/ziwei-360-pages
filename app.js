@@ -1556,12 +1556,13 @@ function traceForLesson(stepId, chart) {
       inputs: { 出生年支: input.yearBranch, 性別: input.gender === "male" ? "男" : "女", 一歲起宮: smallLimit.startBranch, 方向: smallLimit.direction },
       mnemonic: ["小限以出生年支定一歲起宮", "男命順行，女命逆行"],
       ruleExplanation: [
-        `${input.yearBranch} 年生，小限一歲起於 ${smallLimit.startBranch} 宮。`,
-        `${smallLimit.direction}，逐歲輪十二宮。`,
+        `先按出生年支的三合局選一歲起宮：寅午戌年起辰，亥卯未年起丑，申子辰年起戌，巳酉丑年起未。`,
+        `${input.yearBranch} 屬 ${input.yearBranch === "寅" || input.yearBranch === "午" || input.yearBranch === "戌" ? "寅午戌" : input.yearBranch === "亥" || input.yearBranch === "卯" || input.yearBranch === "未" ? "亥卯未" : input.yearBranch === "申" || input.yearBranch === "子" || input.yearBranch === "辰" ? "申子辰" : "巳酉丑"} 三合局，因此一歲起於 ${smallLimit.startBranch} 宮。`,
+        `${smallLimit.direction}：第 n 歲的宮位，從一歲起宮 ${smallLimit.startBranch} ${input.gender === "male" ? "順" : "逆"}數 n−1 格；每十二歲回到同一宮。`,
         "盤面左下底部以小字列各宮小限歲數摘要，避免與左上星曜、右上主星重疊。"
       ],
-      formula: "smallLimitBranch(age) = moveBranch(startBranch, (age - 1) * directionStep)",
-      path: chart.palaces.filter((palace) => palace.smallLimitAges.includes(1)).map((palace) => `${palace.branch}:1歲`),
+      formula: `startBranch = ${smallLimit.startBranch}; directionStep = ${input.gender === "male" ? "+1（順行）" : "−1（逆行）"}; smallLimitBranch(n) = moveBranch(startBranch, (n − 1) × directionStep)`,
+      path: Array.from({ length: 6 }, (_, index) => `${moveBranch(smallLimit.startBranch, index * (input.gender === "male" ? 1 : -1))}:${index + 1}歲`),
       result: { palace: smallLimit.startBranch, label: `一歲起${smallLimit.startBranch}宮；${firstPalace?.smallLimitAges.slice(0, 5).join("、")}歲同宮。` },
       sourceReferences: [sourceReference("起小限", "小限以出生年支定一歲起宮，男順女逆，逐歲輪十二宮。")]
     });
@@ -1577,10 +1578,15 @@ function traceForLesson(stepId, chart) {
     return traceObject(stepId, "安紫微星", {
       inputs: { lunarDay: day, bureauNumber: bureau },
       mnemonic: ["原書為生日除局數取商餘", "現排盤核心暫採補數法以對齊參考盤"],
-      ruleExplanation: [`現行核心：生日 ${day} 補 ${supplement} 成 ${adjustedDay}，除以 ${bureau} 得商 ${quotient}，由寅順數至 ${base}，再依補數奇逆偶順調整到 ${result}。`, "注意：原書除法掌訣與補數法需保留差異審核。"],
-      formula: "adjustedDay = lunarDay + supplement; quotient = adjustedDay / bureau",
-      path: [base, result],
-      intermediateValues: [{ label: "補數", value: supplement }, { label: "商", value: quotient }, { label: "基準宮", value: base }],
+      ruleExplanation: [
+        `第 1 步：以農曆日 ${day} 除五行局數 ${bureau}。不足整除時補 ${supplement}，使 ${day} + ${supplement} = ${adjustedDay} 可以整除。`,
+        `第 2 步：${adjustedDay} ÷ ${bureau} = ${quotient}，由寅宮把商數當作序號順數，得到基準宮 ${base}。`,
+        supplement === 0 ? "第 3 步：補數為 0，不需校正，基準宮就是紫微落宮。" : `第 3 步：補數 ${supplement} 為${supplement % 2 === 1 ? "奇數，從基準宮逆" : "偶數，從基準宮順"}數 ${supplement} 格，得到紫微 ${result}。`,
+        "注意：原書除法掌訣與此補數法有待進一步逐例校核；目前保留計算過程供比對。"
+      ],
+      formula: `supplement = (${bureau} − (${day} mod ${bureau})) mod ${bureau} = ${supplement}; adjustedDay = ${day} + ${supplement} = ${adjustedDay}; quotient = ${adjustedDay} ÷ ${bureau} = ${quotient}; ziwei = moveBranch(${base}, ${supplement === 0 ? 0 : supplement % 2 === 1 ? -supplement : supplement}) = ${result}`,
+      path: [`寅:起算`, base, result],
+      intermediateValues: [{ label: "農曆日", value: day }, { label: "五行局數", value: bureau }, { label: "補數", value: supplement }, { label: "補後日數", value: adjustedDay }, { label: "商", value: quotient }, { label: "基準宮", value: base }, { label: "紫微落宮", value: result }],
       result: { starName: "紫微", palace: result, label: `紫微在${result}` },
       sourceReferences: [sourceReference("起紫微星訣", "起紫微法，系以出生日數除以五行局數，得餘數及商數。", "needs_review")],
       warnings: ["原書除法掌訣與現行補數法需在 Phase 2 完成雙算法比對。"]
