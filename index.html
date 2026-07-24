@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>紫微斗數 360 度命盤</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="input-panel">
+        <button type="button" class="input-toggle" id="input-toggle" aria-expanded="true">收合生辰</button>
+        <div class="input-content" id="input-content">
+          <div class="brand">
+            <h1>紫微斗數 360 度命盤</h1>
+            <p>本命盤安星核心</p>
+          </div>
+
+          <form id="birth-form" class="form-grid">
+            <label>
+              姓名
+              <input name="name" value="1971-08-12 11:30 男命" autocomplete="off" />
+            </label>
+
+            <label>
+              性別
+              <select name="gender">
+                <option value="male">男</option>
+                <option value="female">女</option>
+              </select>
+            </label>
+
+            <label>
+              日期模式
+              <select name="calendarMode">
+                <option value="solar">陽曆自動轉陰曆</option>
+                <option value="lunar">手動輸入陰曆</option>
+              </select>
+            </label>
+
+            <label>
+              陽曆生日
+              <input name="solarDate" type="date" value="1971-08-12" />
+            </label>
+
+            <label>
+              24 小時時間
+              <input name="clockTime" type="time" value="11:30" />
+            </label>
+
+            <label>
+              生年天干
+              <select name="yearStem" data-options="stems"></select>
+            </label>
+
+            <label>
+              生年地支
+              <select name="yearBranch" data-options="branches"></select>
+            </label>
+
+            <label>
+              農曆月
+              <input name="lunarMonth" type="number" min="1" max="12" value="8" />
+            </label>
+
+            <label>
+              農曆日
+              <input name="lunarDay" type="number" min="1" max="30" value="15" />
+            </label>
+
+            <label>
+              生時地支
+              <select name="hourBranch" data-options="branches"></select>
+            </label>
+
+            <label>
+              時辰內分鐘
+              <input name="minutesPassedInHourBranch" type="number" min="0" max="119" value="10" />
+            </label>
+
+            <label>
+              出生地經度
+              <input name="longitude" type="number" step="0.01" value="121.50" />
+            </label>
+
+            <label>
+              標準時區經度
+              <input name="timezoneLongitude" type="number" step="0.01" value="120" />
+            </label>
+
+            <label>
+              均時差分鐘
+              <input name="equationOfTimeMinutes" type="number" step="0.1" value="0" />
+            </label>
+
+            <label class="checkbox-label">
+              <input name="isLeapMonth" type="checkbox" />
+              閏月
+            </label>
+
+            <button type="submit">排出命盤</button>
+          </form>
+
+          <div class="note" id="conversion-note">
+            預設使用 1971/08/12 11:30 男命。陽曆轉陰曆使用瀏覽器內建 Chinese calendar；節氣換年與流派細校可再接專用 calendar provider。
+          </div>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="summary-bar">
+          <div>
+            <div class="eyebrow">命盤摘要</div>
+            <h2 id="headline">等待排盤</h2>
+          </div>
+          <div class="meta-row" id="meta-row"></div>
+        </header>
+
+        <section class="teaching-panel" aria-label="中州學派安星法互動教學">
+          <div class="panel-title">中州學派安星法互動教學</div>
+          <div class="teaching-layout">
+            <nav class="lesson-list" id="lesson-list" aria-label="安星教學步驟"></nav>
+            <div class="lesson-board">
+              <div class="lesson-controls">
+                <button type="button" id="lesson-prev">上一步</button>
+                <button type="button" id="lesson-next">下一步</button>
+                <button type="button" id="lesson-complete">完整排盤</button>
+                <button type="button" id="lesson-reset">重設教學</button>
+                <button type="button" id="lesson-toggle-all">展開全部計算</button>
+                <button type="button" id="download-chart">下載圖檔</button>
+              </div>
+              <div id="lesson-status" class="lesson-status"></div>
+              <div id="lesson-path" class="lesson-path" aria-live="polite"></div>
+              <div class="teaching-chart-wrap">
+                <div class="square-board teaching-square-board" id="teaching-square-board" aria-label="逐步安星教學盤"></div>
+              </div>
+            </div>
+            <aside class="trace-panel" id="trace-panel" aria-label="本步口訣、算法與來源"></aside>
+          </div>
+        </section>
+
+        <section class="chart-layout core-chart-layout" id="chart-layout">
+          <article class="chart-card" id="square-card">
+            <div class="chart-card-header">
+              <div class="panel-title">差異校驗方盤</div>
+              <div class="chart-actions">
+                <button type="button" data-toggle-card="square-card">收合</button>
+                <button type="button" data-max-card="square-card">最大化</button>
+              </div>
+            </div>
+            <div class="chart-card-body">
+              <div class="square-board" id="square-board" aria-label="完整十二宮方盤"></div>
+            </div>
+          </article>
+
+          <article class="chart-card" id="wheel-card">
+            <div class="chart-card-header">
+              <div class="panel-title">360 度圓形命盤</div>
+              <div class="chart-actions">
+                <button type="button" data-toggle-card="wheel-card">收合</button>
+                <button type="button" data-max-card="wheel-card">最大化</button>
+              </div>
+            </div>
+            <div class="chart-card-body wheel-panel">
+              <svg id="wheel" viewBox="0 0 720 720" role="img" aria-label="360 度圓形命盤"></svg>
+            </div>
+          </article>
+        </section>
+
+        <section class="detail-layout">
+          <div class="list-panel">
+            <div class="panel-title">星曜落點</div>
+            <div id="star-list" class="star-list"></div>
+          </div>
+          <div class="list-panel">
+            <div class="panel-title">結構與四化</div>
+            <div id="reading" class="reading"></div>
+          </div>
+        </section>
+
+        <section class="debug-panel">
+          <div class="panel-title">安星除錯與參考盤比對</div>
+          <div id="debug-output" class="debug-output"></div>
+        </section>
+
+        <details class="json-panel">
+          <summary>命盤 JSON</summary>
+          <pre id="json-output"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="./teaching-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
