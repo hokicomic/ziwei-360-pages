@@ -2565,7 +2565,11 @@ function runLessonStep(stepId, chart = currentChart) {
   renderLessonList(chart);
   renderTrace(trace, lesson, blocked);
   highlightLessonPath(trace.highlightPath || trace.path || []);
-  document.querySelector("#lesson-status").innerHTML = `已重建至：${lesson.title}。盤面包含第 1-${completedCount} 步，完成 ${completedCount}/${lessons.length} 步。`;
+  const nextLesson = lessons[activeIndex + 1];
+  const nextHint = nextLesson
+    ? `下一步提示：${nextLesson.title}。請先自行推斷：${nextLesson.purpose || nextLesson.narration?.[0] || `完成「${nextLesson.title}」的計算。`}`
+    : "已是最後一步，可按「完整排盤」檢視完整結果。";
+  document.querySelector("#lesson-status").innerHTML = `已重建至：${lesson.title}。盤面包含第 1-${completedCount} 步，完成 ${completedCount}/${lessons.length} 步。<span class="lesson-next-hint">${nextHint}</span>`;
 }
 
 function runCompleteChart(chart = currentChart) {
@@ -2633,6 +2637,17 @@ function populateSelects() {
   document.querySelector("[name='hourBranch']").value = "午";
 }
 
+function setTodayNoonDefaults() {
+  const form = document.querySelector("#birth-form");
+  const now = new Date();
+  const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+  form.elements.name.value = "今日 12:00 男命";
+  form.elements.gender.value = "male";
+  form.elements.calendarMode.value = "solar";
+  form.elements.solarDate.value = today;
+  form.elements.clockTime.value = "12:00";
+}
+
 function setupChartControls() {
   document.querySelectorAll("[data-toggle-card]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2674,6 +2689,7 @@ function setupInputPanelControls() {
 document.addEventListener("DOMContentLoaded", () => {
   loadLessonState();
   populateSelects();
+  setTodayNoonDefaults();
   syncConvertedFields();
   setupChartControls();
   setupInputPanelControls();

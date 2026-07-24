@@ -770,11 +770,12 @@ h2 {
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: 18px 22px;
+  grid-template-columns: 22px;
+  grid-template-rows: auto auto;
   align-content: end;
   justify-content: end;
   justify-items: center;
-  column-gap: 1px;
+  row-gap: 3px;
   min-width: 0;
   color: var(--ink);
 }
@@ -792,6 +793,14 @@ h2 {
   writing-mode: vertical-rl;
   text-orientation: upright;
   letter-spacing: 0;
+}
+
+.lesson-next-hint {
+  display: block;
+  margin-top: 7px;
+  color: #7a291f;
+  font-weight: 800;
+  line-height: 1.45;
 }
 
 .wm-branch {
