@@ -2701,13 +2701,7 @@ function populateSelects() {
 
 function setTodayNoonDefaults() {
   const form = document.querySelector("#birth-form");
-  const now = new Date();
-  const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
-  form.elements.name.value = "今日 12:00 男命";
-  form.elements.gender.value = "male";
-  form.elements.calendarMode.value = "solar";
-  form.elements.solarDate.value = today;
-  form.elements.clockTime.value = "12:00";
+  form.elements.calendarMode.value = "lunar";
 }
 
 function setupChartControls() {

@@ -33,8 +33,8 @@
             <label>
               日期模式
               <select name="calendarMode">
+                <option value="lunar" selected>手動輸入干支／陰曆</option>
                 <option value="solar">陽曆自動轉陰曆</option>
-                <option value="lunar">手動輸入陰曆</option>
               </select>
             </label>
 
@@ -103,7 +103,7 @@
           </form>
 
           <div class="note" id="conversion-note">
-            預設使用 1971/08/12 11:30 男命。陽曆轉陰曆使用瀏覽器內建 Chinese calendar；節氣換年與流派細校可再接專用 calendar provider。
+            預設為手動干支／陰曆模式，可直接選擇生年干支、農曆月日與生時。陽曆轉陰曆使用瀏覽器內建 Chinese calendar；節氣換年與流派細校可再接專用 calendar provider。
           </div>
         </div>
       </aside>
