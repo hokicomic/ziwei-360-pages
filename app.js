@@ -666,6 +666,39 @@ function sexagenaryFromGregorianYear(year) {
   return { stem, branch };
 }
 
+function sexagenaryYearOptions() {
+  return Array.from({ length: 60 }, (_, index) => {
+    const year = 4 + index;
+    const { stem, branch } = sexagenaryFromGregorianYear(year);
+    return `${stem}${branch}`;
+  });
+}
+
+function gregorianYearsForSexagenaryYear(sexagenaryYear) {
+  const currentYear = new Date().getFullYear();
+  const [stem, branch] = [...sexagenaryYear];
+  const years = [];
+  for (let year = 1500; year <= currentYear + 120; year += 1) {
+    const value = sexagenaryFromGregorianYear(year);
+    if (value.stem === stem && value.branch === branch) years.push(year);
+  }
+  return years;
+}
+
+function closestYearToToday(years) {
+  const currentYear = new Date().getFullYear();
+  return years.reduce((closest, year) => Math.abs(year - currentYear) < Math.abs(closest - currentYear) ? year : closest, years[0]);
+}
+
+function syncGregorianYearOptions() {
+  const form = document.querySelector("#birth-form");
+  const select = form.elements.gregorianYear;
+  const years = gregorianYearsForSexagenaryYear(form.elements.sexagenaryYear.value);
+  const previous = Number(select.value);
+  select.innerHTML = years.map((year) => `<option value="${year}">${year} 年</option>`).join("");
+  select.value = years.includes(previous) ? String(previous) : String(closestYearToToday(years));
+}
+
 function defaultFlowYear() {
   const year = new Date().getFullYear();
   return { year, ...sexagenaryFromGregorianYear(year) };
@@ -710,6 +743,19 @@ function solarToLunar(dateText) {
     isLeapMonth: String(monthText).includes("閏"),
     formatted
   };
+}
+
+function findSolarDateForLunarDate(gregorianYear, yearStem, yearBranch, lunarMonth, lunarDay, isLeapMonth) {
+  const start = new Date(gregorianYear, 0, 1);
+  const end = new Date(gregorianYear + 1, 2, 1);
+  for (let date = new Date(start); date < end; date.setDate(date.getDate() + 1)) {
+    const isoDate = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    const lunar = solarToLunar(isoDate);
+    if (lunar.yearStem === yearStem && lunar.yearBranch === yearBranch && lunar.lunarMonth === lunarMonth && lunar.lunarDay === lunarDay && lunar.isLeapMonth === isLeapMonth) {
+      return isoDate;
+    }
+  }
+  return null;
 }
 
 function clockTimeToHourBranch(timeText) {
@@ -1716,23 +1762,30 @@ function readForm() {
   const clockTime = data.get("clockTime");
   const lunar = calendarMode === "solar" ? solarToLunar(solarDate) : null;
   const hour = clockTimeToHourBranch(clockTime);
+  const sexagenaryYear = data.get("sexagenaryYear");
+  const [manualYearStem, manualYearBranch] = [...sexagenaryYear];
+  const lunarMonth = lunar ? lunar.lunarMonth : Number(data.get("lunarMonth"));
+  const lunarDay = lunar ? lunar.lunarDay : Number(data.get("lunarDay"));
+  const isLeapMonth = lunar ? lunar.isLeapMonth : data.get("isLeapMonth") === "on";
+  const resolvedSolarDate = lunar ? solarDate : findSolarDateForLunarDate(Number(data.get("gregorianYear")), manualYearStem, manualYearBranch, lunarMonth, lunarDay, isLeapMonth);
   return {
     name: data.get("name") || "命盤",
     gender: data.get("gender"),
     calendarMode,
-    solarDate,
-    clockTime,
-    yearStem: lunar ? lunar.yearStem : data.get("yearStem"),
-    yearBranch: lunar ? lunar.yearBranch : data.get("yearBranch"),
-    lunarMonth: lunar ? lunar.lunarMonth : Number(data.get("lunarMonth")),
-    lunarDay: lunar ? lunar.lunarDay : Number(data.get("lunarDay")),
+    solarDate: resolvedSolarDate || "",
+    clockTime: calendarMode === "solar" ? clockTime : "",
+    gregorianYear: lunar ? Number(solarDate.slice(0, 4)) : Number(data.get("gregorianYear")),
+    yearStem: lunar ? lunar.yearStem : manualYearStem,
+    yearBranch: lunar ? lunar.yearBranch : manualYearBranch,
+    lunarMonth,
+    lunarDay,
     hourBranch: calendarMode === "solar" ? hour.hourBranch : data.get("hourBranch"),
     minutesPassedInHourBranch: calendarMode === "solar" ? hour.minutesPassedInHourBranch : Number(data.get("minutesPassedInHourBranch")),
     longitude: Number(data.get("longitude")),
     timezoneLongitude: Number(data.get("timezoneLongitude")),
     equationOfTimeMinutes: Number(data.get("equationOfTimeMinutes")),
-    isLeapMonth: lunar ? lunar.isLeapMonth : data.get("isLeapMonth") === "on",
-    lunarFormatted: lunar ? lunar.formatted : `${data.get("yearStem")}${data.get("yearBranch")}年 農曆${data.get("lunarMonth")}月${data.get("lunarDay")}日`
+    isLeapMonth,
+    lunarFormatted: lunar ? lunar.formatted : `${sexagenaryYear}年 農曆${isLeapMonth ? "閏" : ""}${lunarMonth}月${lunarDay}日${resolvedSolarDate ? `（對應陽曆 ${resolvedSolarDate}）` : "（找不到對應陽曆日期）"}`
   };
 }
 
@@ -1741,8 +1794,8 @@ function syncConvertedFields() {
   const mode = form.elements.calendarMode.value;
   const manual = mode === "lunar";
   const note = document.querySelector("#conversion-note");
-  form.elements.yearStem.disabled = !manual;
-  form.elements.yearBranch.disabled = !manual;
+  form.elements.sexagenaryYear.disabled = !manual;
+  form.elements.gregorianYear.disabled = !manual;
   form.elements.lunarMonth.disabled = !manual;
   form.elements.lunarDay.disabled = !manual;
   form.elements.hourBranch.disabled = !manual;
@@ -1752,8 +1805,9 @@ function syncConvertedFields() {
   if (mode === "solar") {
     const lunar = solarToLunar(form.elements.solarDate.value);
     const hour = clockTimeToHourBranch(form.elements.clockTime.value);
-    form.elements.yearStem.value = lunar.yearStem;
-    form.elements.yearBranch.value = lunar.yearBranch;
+    form.elements.sexagenaryYear.value = `${lunar.yearStem}${lunar.yearBranch}`;
+    syncGregorianYearOptions();
+    form.elements.gregorianYear.value = form.elements.solarDate.value.slice(0, 4);
     form.elements.lunarMonth.value = lunar.lunarMonth;
     form.elements.lunarDay.value = lunar.lunarDay;
     form.elements.hourBranch.value = hour.hourBranch;
@@ -1761,7 +1815,9 @@ function syncConvertedFields() {
     form.elements.isLeapMonth.checked = lunar.isLeapMonth;
     note.textContent = `陽曆 ${form.elements.solarDate.value} ${form.elements.clockTime.value} 已換算為 ${lunar.formatted}，${hour.hourBranch}時，時辰內 ${hour.minutesPassedInHourBranch} 分。`;
   } else {
-    note.textContent = "手動陰曆模式：可直接輸入年干支、農曆月日、生時地支與時辰內分鐘，用於校對不同曆法或派別。";
+    syncGregorianYearOptions();
+    const selectedYear = form.elements.gregorianYear.value;
+    note.textContent = `手動陰曆模式：可直接輸入干支年、農曆月日、生時地支與時辰內分鐘。西元生年可在每 60 年的對應年份中選擇，預設為最接近今年的 ${selectedYear} 年。`;
   }
 }
 
@@ -2632,14 +2688,14 @@ function render(chart) {
 }
 
 function populateSelects() {
-  document.querySelectorAll("[data-options='stems']").forEach((select) => {
-    select.innerHTML = STEMS.map((stem) => `<option value="${stem}">${stem}</option>`).join("");
-    select.value = "辛";
+  document.querySelectorAll("[data-options='sexagenary-years']").forEach((select) => {
+    select.innerHTML = sexagenaryYearOptions().map((year) => `<option value="${year}">${year}年</option>`).join("");
   });
   document.querySelectorAll("[data-options='branches']").forEach((select) => {
     select.innerHTML = BRANCHES.map((branch) => `<option value="${branch}">${branch}</option>`).join("");
   });
-  document.querySelector("[name='yearBranch']").value = "亥";
+  document.querySelector("[name='sexagenaryYear']").value = "辛亥";
+  syncGregorianYearOptions();
   document.querySelector("[name='hourBranch']").value = "午";
 }
 
@@ -2701,7 +2757,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupInputPanelControls();
   setupLessonControls();
   const form = document.querySelector("#birth-form");
-  ["calendarMode", "solarDate", "clockTime"].forEach((name) => {
+  ["calendarMode", "solarDate", "clockTime", "sexagenaryYear", "gregorianYear", "lunarMonth", "lunarDay", "hourBranch", "minutesPassedInHourBranch", "isLeapMonth"].forEach((name) => {
     form.elements[name].addEventListener("change", () => {
       syncConvertedFields();
       render(createNatalChart(readForm()));
