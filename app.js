@@ -5,6 +5,7 @@ const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申",
 const PALACE_BRANCHES = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
 const HOURS = BRANCHES;
 const WHEEL_DISPLAY_ROTATION = 210;
+let yearInputLastChanged = "none";
 const PALACE_NAMES = ["命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮", "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮"];
 const BRANCH_ELEMENTS = { 子: "水", 丑: "土", 寅: "木", 卯: "木", 辰: "土", 巳: "火", 午: "火", 未: "土", 申: "金", 酉: "金", 戌: "土", 亥: "水" };
 const BRANCH_HIDDEN_STEMS = {
@@ -668,6 +669,12 @@ function sexagenaryFromGregorianYear(year) {
 
 function compatibleBranchForStem(stem, branch) {
   return STEMS.indexOf(stem) % 2 === BRANCHES.indexOf(branch) % 2;
+}
+
+function renderYearStemOptions(preferredStem, restrictedByBranch = null) {
+  const select = document.querySelector("[name='yearStem']");
+  select.innerHTML = STEMS.map((stem) => `<option value="${stem}"${restrictedByBranch && !compatibleBranchForStem(stem, restrictedByBranch) ? " disabled" : ""}>${stem}</option>`).join("");
+  select.value = !restrictedByBranch || compatibleBranchForStem(preferredStem, restrictedByBranch) ? preferredStem : STEMS.find((stem) => compatibleBranchForStem(stem, restrictedByBranch));
 }
 
 function renderYearBranchOptions(stem, preferredBranch) {
@@ -1819,6 +1826,7 @@ function syncConvertedFields() {
     const hour = clockTimeToHourBranch(form.elements.clockTime.value);
     form.elements.yearStem.value = lunar.yearStem;
     renderYearBranchOptions(lunar.yearStem, lunar.yearBranch);
+    yearInputLastChanged = "stem";
     syncGregorianYearOptions();
     form.elements.gregorianYear.value = form.elements.solarDate.value.slice(0, 4);
     form.elements.lunarMonth.value = lunar.lunarMonth;
@@ -1829,7 +1837,19 @@ function syncConvertedFields() {
     syncDefaultBirthName(form, lunar);
     note.textContent = `陽曆 ${form.elements.solarDate.value} ${form.elements.clockTime.value} 已換算為 ${lunar.formatted}，${hour.hourBranch}時，時辰內 ${hour.minutesPassedInHourBranch} 分。`;
   } else {
-    renderYearBranchOptions(form.elements.yearStem.value, form.elements.yearBranch.value);
+    if (yearInputLastChanged === "stem") {
+      renderYearStemOptions(form.elements.yearStem.value);
+      renderYearBranchOptions(form.elements.yearStem.value, form.elements.yearBranch.value);
+    } else if (yearInputLastChanged === "branch") {
+      const selectedBranch = form.elements.yearBranch.value;
+      form.elements.yearBranch.innerHTML = BRANCHES.map((branch) => `<option value="${branch}">${branch}</option>`).join("");
+      form.elements.yearBranch.value = selectedBranch;
+      renderYearStemOptions(form.elements.yearStem.value, form.elements.yearBranch.value);
+    } else {
+      renderYearStemOptions(form.elements.yearStem.value);
+      document.querySelector("[name='yearBranch']").innerHTML = BRANCHES.map((branch) => `<option value="${branch}">${branch}</option>`).join("");
+      form.elements.yearBranch.value = "亥";
+    }
     syncGregorianYearOptions();
     syncDefaultBirthName(form);
     const selectedYear = form.elements.gregorianYear.value;
@@ -2711,7 +2731,10 @@ function populateSelects() {
     select.innerHTML = BRANCHES.map((branch) => `<option value="${branch}">${branch}</option>`).join("");
   });
   document.querySelector("[name='yearStem']").value = "辛";
-  renderYearBranchOptions("辛", "亥");
+  document.querySelectorAll("[data-options='year-branches']").forEach((select) => {
+    select.innerHTML = BRANCHES.map((branch) => `<option value="${branch}">${branch}</option>`).join("");
+    select.value = "亥";
+  });
   syncGregorianYearOptions();
   document.querySelector("[name='hourBranch']").value = "午";
 }
@@ -2770,6 +2793,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("#birth-form");
   ["calendarMode", "solarDate", "clockTime", "yearStem", "yearBranch", "gregorianYear", "lunarMonth", "lunarDay", "hourBranch", "minutesPassedInHourBranch", "isLeapMonth"].forEach((name) => {
     form.elements[name].addEventListener("change", () => {
+      if (name === "yearStem") yearInputLastChanged = "stem";
+      if (name === "yearBranch") yearInputLastChanged = "branch";
       syncConvertedFields();
       render(createNatalChart(readForm()));
     });
